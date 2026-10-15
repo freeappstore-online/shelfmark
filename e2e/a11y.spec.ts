@@ -11,6 +11,11 @@ import type { Page } from '@playwright/test'
 import { addByHand, books, expect, go, openApp, test } from './fixtures'
 
 async function expectNoSeriousViolations(page: Page, label: string) {
+  // Let dialog fade-ins finish (not endless ones like spinners): mid-animation
+  // colours are partly transparent and read as low contrast.
+  await page.waitForFunction(() =>
+    document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity),
+  )
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .exclude('#root > div > header')
