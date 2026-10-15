@@ -43,7 +43,7 @@ describe('books', () => {
       rating: 4.5,
       notes: 'The house is beautiful.',
       tags: ['fantasy', ' Fantasy ', '', 'short'],
-      isbn: '978-1-63557-563-2',
+      isbn: '978-1-63557-563-7',
       pages: 272,
     })
     expect(await store.getBook(book.id)).toMatchObject({
@@ -53,7 +53,7 @@ describe('books', () => {
       rating: 4.5,
       notes: 'The house is beautiful.',
       tags: ['fantasy', 'short'],
-      isbn: '9781635575632',
+      isbn: '9781635575637',
       pages: 272,
     })
   })
@@ -98,6 +98,7 @@ describe('books', () => {
       { title: 'x', startedOn: '2026-02-30' },
       { title: 'x', startedOn: '2026-03-02', finishedOn: '2026-03-01' },
       { title: 'x', isbn: '12345' },
+      { title: 'x', isbn: '9780441013594' },
       { title: 'x', pages: 0 },
       { title: 'x', status: 'lost' as never },
     ]

@@ -56,8 +56,11 @@ describe('searchUrl', () => {
     expect(params(searchUrl('123456789x')!).isbn).toBe('123456789X')
   })
 
-  it('returns undefined for a blank query', () => {
+  it('returns undefined for a blank query or an invalid ISBN in ISBN mode', () => {
     expect(searchUrl('   ')).toBeUndefined()
+    expect(searchUrl('9780441013594', 'isbn')).toBeUndefined()
+    // In the default mode an almost-ISBN is just text.
+    expect(params(searchUrl('9780441013594')!).q).toBe('9780441013594')
   })
 })
 

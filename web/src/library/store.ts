@@ -3,6 +3,7 @@
 // lazily on first use, so importing this module doesn't touch IndexedDB.
 
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb'
+import { parseIsbn } from './isbn'
 import { type Book, type BookStatus, type ISODate, type Shelf, type ShelfFilter, STATUSES } from './types'
 
 export const DB_NAME = 'shelfmark'
@@ -265,8 +266,8 @@ export function normalizeBook(book: Book, knownShelves: ReadonlySet<string>): Bo
   }
 
   if (book.isbn !== undefined && book.isbn !== '') {
-    const isbn = book.isbn.replace(/[\s-]/g, '').toUpperCase()
-    if (!/^(\d{9}[\dX]|\d{13})$/.test(isbn)) throw new ValidationError('An ISBN has 10 or 13 digits.')
+    const isbn = parseIsbn(book.isbn)
+    if (!isbn) throw new ValidationError("That ISBN doesn't look right. Check the 10 or 13 digits.")
     out.isbn = isbn
   }
   if (book.pages !== undefined) {

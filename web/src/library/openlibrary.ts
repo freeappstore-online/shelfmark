@@ -2,6 +2,7 @@
 // search.json for results and covers.openlibrary.org for cover images. The
 // query is all that's sent; nothing from the library goes with it.
 
+import { parseIsbn } from './isbn'
 import type { BookInput } from './store'
 
 export const SEARCH_URL = 'https://openlibrary.org/search.json'
@@ -50,19 +51,17 @@ export interface SearchClient {
   search(query: string, mode?: SearchMode, signal?: AbortSignal): Promise<SearchResult[]>
 }
 
-/** The ISBN's digits (and final X) if the text is an ISBN-10 or ISBN-13, else undefined. */
-export function asIsbn(text: string): string | undefined {
-  const isbn = text.replace(/[\s-]/g, '').toUpperCase()
-  return /^(\d{9}[\dX]|\d{13})$/.test(isbn) ? isbn : undefined
-}
+/** The compact ISBN if the text is a valid ISBN-10 or ISBN-13 (check digit included), else undefined. */
+export const asIsbn = parseIsbn
 
-/** The search.json URL for a query. Returns undefined for a blank query. */
+/** The search.json URL for a query. Undefined for a blank query, or an invalid ISBN in 'isbn' mode. */
 export function searchUrl(query: string, mode: SearchMode = 'any'): string | undefined {
   const q = query.trim().replace(/\s+/g, ' ')
   if (!q) return undefined
   const isbn = asIsbn(q)
+  if (mode === 'isbn' && !isbn) return undefined
   const param = mode === 'isbn' || (mode === 'any' && isbn) ? 'isbn' : mode === 'any' ? 'q' : mode
-  const params = new URLSearchParams({ [param]: param === 'isbn' ? (isbn ?? q) : q, fields: FIELDS, limit: String(LIMIT) })
+  const params = new URLSearchParams({ [param]: param === 'isbn' ? isbn! : q, fields: FIELDS, limit: String(LIMIT) })
   return `${SEARCH_URL}?${params}`
 }
 

@@ -15,7 +15,6 @@ const NAV: NavItem[] = [
 
 // What's still to come in v1 (freeappstore-online/platform#229).
 const COMING = [
-  { name: 'Scan ISBN', what: "Scan a book's barcode with your camera, or type the ISBN." },
   { name: 'Progress & goals', what: 'Pages read, a reading streak, a yearly goal and monthly stats.' },
   { name: 'Import & export', what: 'Import from Goodreads; export your library any time.' },
 ]
@@ -52,7 +51,8 @@ function About() {
       <p className="mt-4 text-[var(--muted)]">
         Shelfmark is a simple log of the books you want to read, are reading and have read: shelves of
         your own, dates, a star rating, notes and tags. Your library is kept on this device, with no
-        account needed. Find books on Open Library by title, author or ISBN, or add them by hand.
+        account needed. Find books on Open Library by title, author or ISBN, scan a book's barcode,
+        or add them by hand.
         No ads.
       </p>
       <h2 className="mt-6 font-semibold text-[var(--ink)]">Coming soon</h2>
@@ -65,7 +65,8 @@ function About() {
         ))}
       </ul>
       <p className="mt-4 text-[var(--muted)]">
-        Book searches go to Open Library, and covers come from it; nothing else leaves your device.
+        Book searches go to Open Library, and covers come from it; barcode scans are read on your device
+        and nothing else leaves it.
       </p>
       <p className="mt-4 text-[var(--muted)]">
         Shelfmark is a free, MIT-licensed app on{' '}
