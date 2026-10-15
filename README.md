@@ -1,14 +1,14 @@
 # Shelfmark
 
-**Coming soon — a private reading log: shelves, progress and yearly goals, with Open Library
+**A private reading log: shelves, progress and yearly goals, with Open Library
 search and ISBN scan. Your library stays on your device.** A free app on
 [FreeAppStore](https://freeappstore.online), live at https://shelfmark.freeappstore.online.
 
-Working now: shelves (Want to read, Reading, Read and your own) and books with dates, a
+What it does: shelves (Want to read, Reading, Read and your own) and books with dates, a
 rating, notes and tags, stored in IndexedDB on the device; add books from Open Library search
 (title, author or ISBN, with covers), by scanning the ISBN barcode, or by hand; reading progress, a
-streak, a yearly goal and monthly stats. Import/export is still to come; progress is tracked in
-[freeappstore-online/platform#229](https://github.com/freeappstore-online/platform/issues/229).
+streak, a yearly goal and monthly stats; JSON backup/restore and Goodreads CSV import. v1 was
+tracked in [freeappstore-online/platform#229](https://github.com/freeappstore-online/platform/issues/229).
 
 ## Develop
 

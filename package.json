@@ -1,6 +1,6 @@
 {
   "name": "shelfmark",
-  "description": "Coming soon — a private reading log: shelves, progress and yearly goals, with Open Library search and ISBN scan. Your library stays on your device.",
+  "description": "A private reading log: shelves, progress and yearly goals, with Open Library search and ISBN scan. Your library stays on your device.",
   "private": true,
   "packageManager": "pnpm@10.30.3",
   "engines": {

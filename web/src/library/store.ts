@@ -9,15 +9,18 @@ import {
   type Book,
   type BookStatus,
   type ISODate,
+  type ImportMode,
+  type LibraryExport,
   type ProgressEntry,
   type Shelf,
   type ShelfFilter,
+  SCHEMA_VERSION,
   STATUSES,
 } from './types'
 
 export const DB_NAME = 'shelfmark'
 // 1: books, shelves. 2: progress, settings (#234).
-const DB_VERSION = 2
+const DB_VERSION = SCHEMA_VERSION
 const GOALS_KEY = 'goals'
 
 interface LibraryDB extends DBSchema {
@@ -40,6 +43,8 @@ export interface LibraryStore {
   listBooks(filter?: ShelfFilter): Promise<Book[]>
   getBook(id: string): Promise<Book | undefined>
   addBook(input: BookInput): Promise<Book>
+  /** Adds many books in one transaction (all or none), with one change event. */
+  addBooks(inputs: BookInput[]): Promise<Book[]>
   updateBook(id: string, patch: BookPatch): Promise<Book>
   deleteBook(id: string): Promise<void>
   /** Custom shelves, oldest first. */
@@ -59,9 +64,25 @@ export interface LibraryStore {
   getGoal(year: number): Promise<number | undefined>
   /** Sets the number of books to read in a year; null removes the goal. */
   setGoal(year: number, goal: number | null): Promise<void>
+  /** The whole library, for a JSON backup. */
+  exportAll(): Promise<LibraryExport>
+  /**
+   * Imports a backup already checked by parseLibraryJSON (backup.ts).
+   * replace: the backup becomes the whole library. merge: books and progress
+   * entries are matched by id and the newer updatedAt wins; shelves are matched
+   * by id, then by name; goals in the backup win.
+   */
+  importAll(data: LibraryExport, mode: ImportMode): Promise<ImportSummary>
   /** Called after any write, from this tab or another. Returns an unsubscribe function. */
   subscribe(listener: () => void): () => void
   close(): Promise<void>
+}
+
+export interface ImportSummary {
+  /** Books added or updated. */
+  books: number
+  shelves: number
+  progress: number
 }
 
 export interface StoreOptions {
@@ -163,6 +184,92 @@ export function createLibraryStore({
       await (await db()).add('books', book)
       changed()
       return book
+    },
+
+    async addBooks(inputs) {
+      const known = await shelfIds()
+      const t = now()
+      const books = inputs.map((input) =>
+        normalizeBook(
+          { author: '', status: 'want', shelves: [], notes: '', tags: [], ...input, id: crypto.randomUUID(), createdAt: t, updatedAt: t },
+          known,
+        ),
+      )
+      const tx = (await db()).transaction('books', 'readwrite')
+      for (const book of books) await tx.store.add(book)
+      await tx.done
+      if (books.length) changed()
+      return books
+    },
+
+    async exportAll() {
+      const d = await db()
+      const [books, shelves, progress, goals] = await Promise.all([
+        d.getAll('books'),
+        d.getAll('shelves'),
+        d.getAll('progress'),
+        d.get('settings', GOALS_KEY),
+      ])
+      return {
+        app: 'shelfmark',
+        schemaVersion: SCHEMA_VERSION,
+        exportedAt: new Date(now()).toISOString(),
+        books: books.sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id)),
+        shelves: shelves.sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id)),
+        progress: progress.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id)),
+        goals: { ...goals },
+      }
+    },
+
+    async importAll(data, mode) {
+      const tx = (await db()).transaction(['books', 'shelves', 'progress', 'settings'], 'readwrite')
+      const books = tx.objectStore('books')
+      const shelves = tx.objectStore('shelves')
+      const progress = tx.objectStore('progress')
+      const settings = tx.objectStore('settings')
+      const summary: ImportSummary = { books: 0, shelves: 0, progress: 0 }
+
+      if (mode === 'replace') {
+        await Promise.all([books.clear(), shelves.clear(), progress.clear(), settings.clear()])
+        for (const s of data.shelves) await shelves.put(s)
+        for (const b of data.books) await books.put(b)
+        for (const p of data.progress) await progress.put(p)
+        await settings.put({ ...data.goals }, GOALS_KEY)
+        Object.assign(summary, { books: data.books.length, shelves: data.shelves.length, progress: data.progress.length })
+      } else {
+        // Shelves: same id, or else same name, is the same shelf.
+        const existing = await shelves.getAll()
+        const byName = new Map(existing.map((s) => [s.name.toLocaleLowerCase(), s.id]))
+        const ids = new Set(existing.map((s) => s.id))
+        const remap = new Map<string, string>()
+        for (const s of data.shelves) {
+          if (ids.has(s.id)) continue
+          const sameName = byName.get(s.name.toLocaleLowerCase())
+          if (sameName) remap.set(s.id, sameName)
+          else {
+            await shelves.put(s)
+            ids.add(s.id)
+            summary.shelves++
+          }
+        }
+        for (const b of data.books) {
+          const current = await books.get(b.id)
+          if (current && current.updatedAt >= b.updatedAt) continue
+          const shelvesOn = [...new Set(b.shelves.map((id) => remap.get(id) ?? id))].filter((id) => ids.has(id))
+          await books.put({ ...b, shelves: shelvesOn })
+          summary.books++
+        }
+        for (const p of data.progress) {
+          const current = await progress.get(p.id)
+          if ((current && current.updatedAt >= p.updatedAt) || !(await books.getKey(p.bookId))) continue
+          await progress.put(p)
+          summary.progress++
+        }
+        await settings.put({ ...(await settings.get(GOALS_KEY)), ...data.goals }, GOALS_KEY)
+      }
+      await tx.done
+      changed()
+      return summary
     },
 
     async updateBook(id, patch) {
@@ -322,7 +429,7 @@ async function uniqueShelfName(d: IDBPDatabase<LibraryDB>, raw: string, selfId?:
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
-function isValidDate(value: string): boolean {
+export function isValidDate(value: string): boolean {
   if (!ISO_DATE.test(value)) return false
   const d = new Date(`${value}T00:00:00Z`)
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value

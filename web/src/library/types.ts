@@ -63,3 +63,22 @@ export interface ProgressEntry {
 
 /** What the library list shows: everything, a built-in shelf, or a custom shelf's id. */
 export type ShelfFilter = 'all' | BookStatus | (string & {})
+
+/** The IndexedDB version, which is also the export format's version. */
+export const SCHEMA_VERSION = 2
+
+/** The whole library, as exported to (and imported from) a JSON file. */
+export interface LibraryExport {
+  app: 'shelfmark'
+  schemaVersion: number
+  /** ISO timestamp. */
+  exportedAt: string
+  books: Book[]
+  shelves: Shelf[]
+  progress: ProgressEntry[]
+  /** Yearly book goals, by year ("2026": 24). */
+  goals: Record<string, number>
+}
+
+/** replace: the file becomes the whole library. merge: per record, the newer one wins. */
+export type ImportMode = 'replace' | 'merge'

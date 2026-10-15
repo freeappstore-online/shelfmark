@@ -3,10 +3,11 @@
 Shelfmark: a private reading log on FreeAppStore — shelves (Want to read, Reading, Read, custom),
 per-book dates, rating, notes and tags, Open Library search, ISBN barcode scan, progress, a yearly
 goal and stats, JSON export/import and Goodreads CSV import. The library stays on the device
-(IndexedDB, `web/src/library/store.ts`). Built so far: shelves and manual book entry (#231),
-Open Library search (`web/src/library/openlibrary.ts`, #232), ISBN scan/validation
-(`web/src/library/barcode.ts`, `isbn.ts`, #233), progress/goal/stats (`stats.ts`, #234);
-the rest is listed under "Coming soon" on About; see freeappstore-online/platform#229.
+(IndexedDB, `web/src/library/store.ts`). v1 (freeappstore-online/platform#229) is built: shelves and
+manual entry (#231), Open Library search (`web/src/library/openlibrary.ts`, #232), ISBN scan/validation
+(`barcode.ts`, `isbn.ts`, #233), progress/goal/stats (`stats.ts`, #234), privacy note, JSON backup
+(`backup.ts`) and Goodreads import (`goodreads.ts`, #235). Bump `SCHEMA_VERSION` (types.ts) for any
+store change; `parseLibraryJSON` must keep reading older backups.
 
 - Live: https://shelfmark.freeappstore.online
 - Dev: `pnpm install && pnpm dev`
