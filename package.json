@@ -20,6 +20,6 @@
     "build": "pnpm --filter @shelfmark/web build",
     "preview": "pnpm --filter @shelfmark/web preview",
     "typecheck": "pnpm --filter @shelfmark/web exec tsc -b",
-    "test": "pnpm --filter @shelfmark/web exec tsc -b"
+    "test": "pnpm --filter @shelfmark/web test"
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { initApp } from '@freeappstore/sdk'
 import { BuildInfo, type NavItem, PageHeader, Shell } from '@freeappstore/sdk/ui'
+import { Library } from './Library'
 
 const fas = initApp({ appId: 'shelfmark' })
 
@@ -12,14 +13,12 @@ const NAV: NavItem[] = [
   { label: 'About', href: '/about', title: 'About — Shelfmark' },
 ]
 
-// The features planned for v1 (freeappstore-online/platform#229).
-const FEATURES = [
-  { name: 'Shelves', what: 'Want to read, Reading and Read, plus shelves of your own.' },
-  { name: 'Your books', what: 'Dates, a star rating, notes and tags for every book.' },
+// What's still to come in v1 (freeappstore-online/platform#229).
+const COMING = [
   { name: 'Find books', what: 'Search Open Library by title, author or ISBN, with covers.' },
   { name: 'Scan ISBN', what: "Scan a book's barcode with your camera, or type the ISBN." },
   { name: 'Progress & goals', what: 'Pages read, a reading streak, a yearly goal and monthly stats.' },
-  { name: 'Private', what: 'Your library stays on your device. Import from Goodreads; export any time.' },
+  { name: 'Import & export', what: 'Import from Goodreads; export your library any time.' },
 ]
 
 export default function App() {
@@ -47,35 +46,26 @@ export default function App() {
   )
 }
 
-function Library() {
+function About() {
   return (
     <>
-      <PageHeader
-        title="Shelfmark"
-        description="Coming soon — a private reading log: shelves, progress and yearly goals, with Open Library search and ISBN scan. Your library stays on your device."
-      />
-      <ComingSoon />
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-        {FEATURES.map((feature) => (
+      <PageHeader title="About" />
+      <p className="mt-4 text-[var(--muted)]">
+        Shelfmark is a simple log of the books you want to read, are reading and have read: shelves of
+        your own, dates, a star rating, notes and tags. Your library is kept on this device, with no
+        account needed. No ads.
+      </p>
+      <h2 className="mt-6 font-semibold text-[var(--ink)]">Coming soon</h2>
+      <ul className="mt-2 grid gap-3 sm:grid-cols-2">
+        {COMING.map((feature) => (
           <li key={feature.name} className="rounded-[var(--radius)] border border-[var(--line)] p-4">
             <p className="font-semibold text-[var(--ink)]">{feature.name}</p>
             <p className="text-sm text-[var(--muted)]">{feature.what}</p>
           </li>
         ))}
       </ul>
-    </>
-  )
-}
-
-function About() {
-  return (
-    <>
-      <PageHeader title="About" />
-      <ComingSoon />
       <p className="mt-4 text-[var(--muted)]">
-        Shelfmark will be a simple log of the books you want to read, are reading and have read. Your
-        library will be kept on your device, with no account needed; only book searches will go to
-        Open Library. No ads.
+        Book searches will go to Open Library; nothing else leaves your device.
       </p>
       <p className="mt-4 text-[var(--muted)]">
         Shelfmark is a free, MIT-licensed app on{' '}
@@ -85,14 +75,5 @@ function About() {
         .
       </p>
     </>
-  )
-}
-
-// Placeholder until the features are built. None of them work yet, so it says so plainly.
-function ComingSoon() {
-  return (
-    <p className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] p-4 text-[var(--muted)]">
-      Coming soon. Shelfmark is in development; the features below aren't available yet.
-    </p>
   )
 }

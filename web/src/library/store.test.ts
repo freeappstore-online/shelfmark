@@ -1,0 +1,186 @@
+import 'fake-indexeddb/auto'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { type LibraryStore, ValidationError, createLibraryStore, normalizeTags } from './store'
+
+let n = 0
+const open: LibraryStore[] = []
+
+/** A store on a fresh database, with a clock that ticks 1ms per call. */
+function makeStore(dbName = `test-${++n}`, start = 1_000) {
+  let t = start
+  const store = createLibraryStore({ dbName, now: () => t++, requestPersist: () => Promise.resolve(true) })
+  open.push(store)
+  return store
+}
+
+afterEach(async () => {
+  await Promise.all(open.splice(0).map((s) => s.close()))
+})
+
+describe('books', () => {
+  it('adds a book with defaults and reads it back', async () => {
+    const store = makeStore()
+    const book = await store.addBook({ title: '  Middlemarch ', author: 'George Eliot' })
+    expect(book).toMatchObject({
+      title: 'Middlemarch',
+      author: 'George Eliot',
+      status: 'want',
+      shelves: [],
+      notes: '',
+      tags: [],
+    })
+    expect(book.id).toBeTruthy()
+    expect(await store.getBook(book.id)).toEqual(book)
+  })
+
+  it('stores status, dates, rating, notes and tags', async () => {
+    const store = makeStore()
+    const book = await store.addBook({
+      title: 'Piranesi',
+      status: 'read',
+      startedOn: '2026-01-02',
+      finishedOn: '2026-01-20',
+      rating: 4.5,
+      notes: 'The house is beautiful.',
+      tags: ['fantasy', ' Fantasy ', '', 'short'],
+      isbn: '978-1-63557-563-2',
+      pages: 272,
+    })
+    expect(await store.getBook(book.id)).toMatchObject({
+      status: 'read',
+      startedOn: '2026-01-02',
+      finishedOn: '2026-01-20',
+      rating: 4.5,
+      notes: 'The house is beautiful.',
+      tags: ['fantasy', 'short'],
+      isbn: '9781635575632',
+      pages: 272,
+    })
+  })
+
+  it('updates fields, clears optional ones with null and bumps updatedAt', async () => {
+    const store = makeStore()
+    const book = await store.addBook({ title: 'Dune', rating: 3, startedOn: '2026-02-01' })
+    const updated = await store.updateBook(book.id, { status: 'reading', rating: null, notes: 'Spice.' })
+    expect(updated.status).toBe('reading')
+    expect(updated.rating).toBeUndefined()
+    expect('rating' in updated).toBe(false)
+    expect(updated.notes).toBe('Spice.')
+    expect(updated.startedOn).toBe('2026-02-01')
+    expect(updated.createdAt).toBe(book.createdAt)
+    expect(updated.updatedAt).toBeGreaterThan(book.updatedAt)
+    expect(await store.getBook(book.id)).toEqual(updated)
+  })
+
+  it('deletes a book', async () => {
+    const store = makeStore()
+    const book = await store.addBook({ title: 'Gone' })
+    await store.deleteBook(book.id)
+    expect(await store.getBook(book.id)).toBeUndefined()
+    expect(await store.listBooks()).toEqual([])
+  })
+
+  it('rejects invalid books', async () => {
+    const store = makeStore()
+    const bad = [
+      { title: '   ' },
+      { title: 'x', rating: 0 },
+      { title: 'x', rating: 5.5 },
+      { title: 'x', rating: 3.3 },
+      { title: 'x', startedOn: '2026-02-30' },
+      { title: 'x', startedOn: '2026-03-02', finishedOn: '2026-03-01' },
+      { title: 'x', isbn: '12345' },
+      { title: 'x', pages: 0 },
+      { title: 'x', status: 'lost' as never },
+    ]
+    for (const input of bad) await expect(store.addBook(input)).rejects.toBeInstanceOf(ValidationError)
+    expect(await store.listBooks()).toEqual([])
+  })
+
+  it('rejects an update to a missing book or one that makes it invalid, leaving it unchanged', async () => {
+    const store = makeStore()
+    await expect(store.updateBook('nope', { title: 'x' })).rejects.toBeInstanceOf(ValidationError)
+    const book = await store.addBook({ title: 'Kept', finishedOn: '2026-05-01' })
+    await expect(store.updateBook(book.id, { startedOn: '2026-06-01' })).rejects.toThrow(/finish date/)
+    expect(await store.getBook(book.id)).toEqual(book)
+  })
+})
+
+describe('shelves and filtering', () => {
+  it('lists books by built-in shelf, most recently updated first', async () => {
+    const store = makeStore()
+    const a = await store.addBook({ title: 'A', status: 'want' })
+    const b = await store.addBook({ title: 'B', status: 'reading' })
+    const c = await store.addBook({ title: 'C', status: 'want' })
+    await store.updateBook(a.id, { notes: 'touched' })
+
+    expect((await store.listBooks()).map((x) => x.title)).toEqual(['A', 'C', 'B'])
+    expect((await store.listBooks('want')).map((x) => x.id)).toEqual([a.id, c.id])
+    expect((await store.listBooks('reading')).map((x) => x.id)).toEqual([b.id])
+    expect(await store.listBooks('read')).toEqual([])
+  })
+
+  it('creates, renames and deletes custom shelves', async () => {
+    const store = makeStore()
+    const favourites = await store.addShelf('  Favourites ')
+    const book = await store.addBook({ title: 'Emma', shelves: [favourites.id, favourites.id, 'unknown'] })
+    expect(book.shelves).toEqual([favourites.id])
+    expect((await store.listBooks(favourites.id)).map((x) => x.id)).toEqual([book.id])
+
+    const renamed = await store.renameShelf(favourites.id, 'All-time favourites')
+    expect(renamed.name).toBe('All-time favourites')
+    expect(await store.listShelves()).toEqual([renamed])
+
+    await store.deleteShelf(favourites.id)
+    expect(await store.listShelves()).toEqual([])
+    expect((await store.getBook(book.id))?.shelves).toEqual([])
+  })
+
+  it('rejects empty and duplicate shelf names, including the built-in ones', async () => {
+    const store = makeStore()
+    await store.addShelf('Book club')
+    await expect(store.addShelf(' ')).rejects.toBeInstanceOf(ValidationError)
+    await expect(store.addShelf('book CLUB')).rejects.toThrow(/already/)
+    await expect(store.addShelf('Reading')).rejects.toThrow(/already/)
+    const other = await store.addShelf('Other')
+    await expect(store.renameShelf(other.id, 'Book club')).rejects.toThrow(/already/)
+    // Renaming a shelf to its own name (in another case) is fine.
+    expect((await store.renameShelf(other.id, 'OTHER')).name).toBe('OTHER')
+  })
+})
+
+describe('persistence and change events', () => {
+  it('keeps books and shelves across reopening the database (a reload)', async () => {
+    const dbName = 'reload'
+    const first = makeStore(dbName)
+    const shelf = await first.addShelf('Holiday')
+    const book = await first.addBook({ title: 'Persuasion', shelves: [shelf.id], tags: ['austen'] })
+    await first.close()
+
+    const second = makeStore(dbName, 5_000)
+    expect(await second.getBook(book.id)).toEqual(book)
+    expect(await second.listShelves()).toEqual([shelf])
+  })
+
+  it('notifies subscribers after each write and asks for persistent storage once', async () => {
+    const requestPersist = vi.fn(() => Promise.resolve(true))
+    const store = createLibraryStore({ dbName: 'events', requestPersist })
+    open.push(store)
+    const listener = vi.fn()
+    const unsubscribe = store.subscribe(listener)
+    const book = await store.addBook({ title: 'One' })
+    await store.updateBook(book.id, { rating: 5 })
+    await store.deleteBook(book.id)
+    expect(listener).toHaveBeenCalledTimes(3)
+    expect(requestPersist).toHaveBeenCalledTimes(1)
+    unsubscribe()
+    await store.addShelf('Quiet')
+    expect(listener).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('normalizeTags', () => {
+  it('trims, collapses spaces and drops case-insensitive duplicates', () => {
+    expect(normalizeTags(['  sci  fi ', 'Sci Fi', 'classic', ''])).toEqual(['sci fi', 'classic'])
+  })
+})

@@ -4,8 +4,9 @@
 search and ISBN scan. Your library stays on your device.** A free app on
 [FreeAppStore](https://freeappstore.online), live at https://shelfmark.freeappstore.online.
 
-Right now this is a shell: it lists the planned features, but none of them work yet. Progress is
-tracked in
+Working now: shelves (Want to read, Reading, Read and your own) and books with dates, a
+rating, notes and tags, added by hand and stored in IndexedDB on the device. Search, ISBN scan,
+progress, goals and import/export are still to come; progress is tracked in
 [freeappstore-online/platform#229](https://github.com/freeappstore-online/platform/issues/229).
 
 ## Develop
