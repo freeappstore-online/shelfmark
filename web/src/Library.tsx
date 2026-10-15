@@ -1,5 +1,7 @@
 import { type FormEvent, type ReactNode, useState } from 'react'
 import { ConfirmDialog, EmptyState, Modal, PageHeader } from '@freeappstore/sdk/ui'
+import { BookSearch } from './BookSearch'
+import { Cover } from './Cover'
 import { type BookInput, type BookPatch, ValidationError } from './library/store'
 import { type Book, type BookStatus, type Shelf, type ShelfFilter, STATUSES } from './library/types'
 import { library, useLibrary } from './library/useLibrary'
@@ -31,7 +33,9 @@ export function stars(rating: number): string {
 
 export function Library() {
   const [filter, setFilter] = useState<ShelfFilter>('all')
-  const [editing, setEditing] = useState<Book | 'new' | null>(null)
+  // The form is open for an existing book, or for a new one (from search, or blank).
+  const [editing, setEditing] = useState<{ book?: Book; draft?: BookInput } | null>(null)
+  const [searching, setSearching] = useState(false)
   const [managingShelves, setManagingShelves] = useState(false)
   const shelves = useLibrary((s) => s.listShelves())
   const books = useLibrary((s) => s.listBooks(filter), [filter])
@@ -52,7 +56,7 @@ export function Library() {
         title="Library"
         description="Your books, kept on this device."
         actions={
-          <button type="button" className={primaryButton} onClick={() => setEditing('new')}>
+          <button type="button" className={primaryButton} onClick={() => setSearching(true)}>
             Add book
           </button>
         }
@@ -89,7 +93,7 @@ export function Library() {
                 : 'Books you put on this shelf will show up here.'
             }
             action={
-              <button type="button" className={primaryButton} onClick={() => setEditing('new')}>
+              <button type="button" className={primaryButton} onClick={() => setSearching(true)}>
                 Add book
               </button>
             }
@@ -101,32 +105,35 @@ export function Library() {
             <li key={book.id}>
               <button
                 type="button"
-                onClick={() => setEditing(book)}
-                className="w-full rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] p-4 text-left hover:border-[var(--line-strong)]"
+                onClick={() => setEditing({ book })}
+                className="flex w-full gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] p-4 text-left hover:border-[var(--line-strong)]"
               >
-                <span className="flex items-baseline justify-between gap-3">
-                  <span className="display-font text-lg font-semibold text-[var(--ink)]">{book.title}</span>
-                  {book.rating !== undefined && (
-                    <span className="shrink-0 text-[var(--accent)]" aria-label={`${book.rating} out of 5 stars`}>
-                      {stars(book.rating)}
-                    </span>
-                  )}
-                </span>
-                {book.author && <span className="block text-sm text-[var(--muted)]">{book.author}</span>}
-                <span className="mt-2 flex flex-wrap gap-1.5 text-xs">
-                  <span className="rounded-full bg-[var(--sky-soft)] px-2 py-0.5 text-[var(--sky-deep)]">
-                    {STATUS_LABEL[book.status]}
+                <Cover coverId={book.coverId} title={book.title} />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="display-font text-lg font-semibold text-[var(--ink)]">{book.title}</span>
+                    {book.rating !== undefined && (
+                      <span className="shrink-0 text-[var(--accent)]" aria-label={`${book.rating} out of 5 stars`}>
+                        {stars(book.rating)}
+                      </span>
+                    )}
                   </span>
-                  {book.shelves.map((id) => (
-                    <span key={id} className="rounded-full bg-[var(--mint-soft)] px-2 py-0.5 text-[var(--mint-deep)]">
-                      {shelfName.get(id)}
+                  {book.author && <span className="block text-sm text-[var(--muted)]">{book.author}</span>}
+                  <span className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                    <span className="rounded-full bg-[var(--sky-soft)] px-2 py-0.5 text-[var(--sky-deep)]">
+                      {STATUS_LABEL[book.status]}
                     </span>
-                  ))}
-                  {book.tags.map((tag) => (
-                    <span key={tag} className="rounded-full border border-[var(--line-strong)] px-2 py-0.5 text-[var(--muted)]">
-                      #{tag}
-                    </span>
-                  ))}
+                    {book.shelves.map((id) => (
+                      <span key={id} className="rounded-full bg-[var(--mint-soft)] px-2 py-0.5 text-[var(--mint-deep)]">
+                        {shelfName.get(id)}
+                      </span>
+                    ))}
+                    {book.tags.map((tag) => (
+                      <span key={tag} className="rounded-full border border-[var(--line-strong)] px-2 py-0.5 text-[var(--muted)]">
+                        #{tag}
+                      </span>
+                    ))}
+                  </span>
                 </span>
               </button>
             </li>
@@ -134,9 +141,19 @@ export function Library() {
         </ul>
       )}
 
+      {searching && (
+        <BookSearch
+          onClose={() => setSearching(false)}
+          onPick={(draft) => {
+            setSearching(false)
+            setEditing({ draft })
+          }}
+        />
+      )}
       {editing && (
         <BookForm
-          book={editing === 'new' ? undefined : editing}
+          book={editing.book}
+          draft={editing.draft}
           defaultStatus={STATUSES.some((s) => s.key === activeFilter) ? (activeFilter as BookStatus) : 'want'}
           defaultShelves={shelves?.some((s) => s.id === activeFilter) ? [activeFilter] : []}
           shelves={shelves ?? []}
@@ -152,19 +169,23 @@ const RATINGS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
 
 function BookForm({
   book,
+  draft,
   defaultStatus,
   defaultShelves,
   shelves,
   onClose,
 }: {
   book?: Book
+  /** Details for a new book, e.g. from Open Library search. */
+  draft?: BookInput
   defaultStatus: BookStatus
   defaultShelves: string[]
   shelves: Shelf[]
   onClose: () => void
 }) {
-  const [title, setTitle] = useState(book?.title ?? '')
-  const [author, setAuthor] = useState(book?.author ?? '')
+  const start = book ?? draft
+  const [title, setTitle] = useState(start?.title ?? '')
+  const [author, setAuthor] = useState(start?.author ?? '')
   const [status, setStatus] = useState<BookStatus>(book?.status ?? defaultStatus)
   const [startedOn, setStartedOn] = useState(book?.startedOn ?? '')
   const [finishedOn, setFinishedOn] = useState(book?.finishedOn ?? '')
@@ -172,8 +193,8 @@ function BookForm({
   const [notes, setNotes] = useState(book?.notes ?? '')
   const [tags, setTags] = useState(book?.tags.join(', ') ?? '')
   const [onShelves, setOnShelves] = useState<string[]>(book?.shelves ?? defaultShelves)
-  const [isbn, setIsbn] = useState(book?.isbn ?? '')
-  const [pages, setPages] = useState(book?.pages?.toString() ?? '')
+  const [isbn, setIsbn] = useState(start?.isbn ?? '')
+  const [pages, setPages] = useState(start?.pages?.toString() ?? '')
   const [error, setError] = useState('')
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
@@ -199,6 +220,9 @@ function BookForm({
       isbn: isbn.trim() || null,
       pages: pages ? Number(pages) : null,
     }
+    // A book found on Open Library keeps its cover and work key.
+    if (!book && draft?.coverId) patch.coverId = draft.coverId
+    if (!book && draft?.olKey) patch.olKey = draft.olKey
     try {
       if (book) await library.updateBook(book.id, patch)
       else await library.addBook(Object.fromEntries(Object.entries(patch).map(([k, v]) => [k, v ?? undefined])) as BookInput)
@@ -217,6 +241,11 @@ function BookForm({
     <>
       <Modal open onClose={onClose} title={book ? 'Edit book' : 'Add book'} maxWidth={560}>
         <form onSubmit={submit} className="grid gap-3" noValidate>
+          {start?.coverId !== undefined && (
+            <div className="flex justify-center">
+              <Cover coverId={start.coverId} title={title} size="M" />
+            </div>
+          )}
           <Field label="Title">
             <input className={field} value={title} onChange={(e) => setTitle(e.target.value)} required data-autofocus />
           </Field>

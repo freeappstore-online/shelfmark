@@ -275,6 +275,14 @@ export function normalizeBook(book: Book, knownShelves: ReadonlySet<string>): Bo
     }
     out.pages = book.pages
   }
+  if (book.coverId !== undefined) {
+    if (!Number.isInteger(book.coverId) || book.coverId < 1) throw new ValidationError('That cover id is not valid.')
+    out.coverId = book.coverId
+  }
+  if (book.olKey !== undefined && book.olKey !== '') {
+    if (!/^\/works\/OL\d+W$/.test(book.olKey)) throw new ValidationError('That Open Library key is not valid.')
+    out.olKey = book.olKey
+  }
   if (book.rating !== undefined) {
     if (!(book.rating >= 0.5 && book.rating <= 5) || book.rating * 2 !== Math.round(book.rating * 2)) {
       throw new ValidationError('Ratings go from ½ to 5 stars, in half stars.')

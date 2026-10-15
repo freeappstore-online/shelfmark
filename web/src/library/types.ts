@@ -26,6 +26,10 @@ export interface Book {
   /** ISBN-10 or ISBN-13, digits (and a final X) only. */
   isbn?: string
   pages?: number
+  /** Open Library cover id (covers.openlibrary.org/b/id/<id>-M.jpg). */
+  coverId?: number
+  /** Open Library work key, e.g. "/works/OL45804W", for a book added from search. */
+  olKey?: string
   status: BookStatus
   /** Ids of custom shelves. */
   shelves: string[]

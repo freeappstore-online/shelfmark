@@ -22,6 +22,19 @@ export default defineConfig({
         // the SW intercepts the navigation but has no response for it.
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/, /^\/v1/],
+        // Book covers seen once stay available offline. Search results are
+        // not cached here; the app keeps its own short in-memory cache.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.origin === 'https://covers.openlibrary.org',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'covers',
+              expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
       // Manifest is defined in web/public/manifest.json (single source of truth).
       // VitePWA reads it from there automatically when manifest is false.

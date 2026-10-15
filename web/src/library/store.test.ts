@@ -72,6 +72,14 @@ describe('books', () => {
     expect(await store.getBook(book.id)).toEqual(updated)
   })
 
+  it('keeps the Open Library cover id and work key, and rejects bad ones', async () => {
+    const store = makeStore()
+    const book = await store.addBook({ title: 'Dune', coverId: 11481354, olKey: '/works/OL893415W' })
+    expect(await store.getBook(book.id)).toMatchObject({ coverId: 11481354, olKey: '/works/OL893415W' })
+    await expect(store.addBook({ title: 'x', coverId: -1 })).rejects.toBeInstanceOf(ValidationError)
+    await expect(store.addBook({ title: 'x', olKey: 'https://evil.example' })).rejects.toBeInstanceOf(ValidationError)
+  })
+
   it('deletes a book', async () => {
     const store = makeStore()
     const book = await store.addBook({ title: 'Gone' })
