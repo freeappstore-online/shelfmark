@@ -11,6 +11,7 @@ import {
   toBookInput,
 } from './library/openlibrary'
 import type { BookInput } from './library/store'
+import { button, field } from './ui'
 
 /** One client for the app, so the result cache outlives the dialog. */
 const client = createSearchClient()
@@ -30,10 +31,6 @@ type State =
   | { kind: 'offline' }
   | { kind: 'error' }
 
-const field =
-  'w-full rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] px-3 py-2 text-[var(--ink)]'
-const button =
-  'rounded-[var(--radius-sm)] border border-[var(--line-strong)] px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]'
 
 /**
  * Finds a book on Open Library. Picking a result hands its details to the

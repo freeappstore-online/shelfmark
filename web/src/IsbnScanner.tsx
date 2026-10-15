@@ -2,15 +2,10 @@ import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Modal } from '@freeappstore/sdk/ui'
 import { type IsbnDetector, type ScanEnvironment, createIsbnDetector, scanForIsbn } from './library/barcode'
 import { toIsbn13 } from './library/isbn'
+import { button, primaryButton, field } from './ui'
 
 const SCAN_INTERVAL_MS = 200
 
-const field =
-  'w-full rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] px-3 py-2 text-[var(--ink)]'
-const button =
-  'rounded-[var(--radius-sm)] border border-[var(--line-strong)] px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]'
-const primaryButton =
-  'rounded-[var(--radius-sm)] bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-deep)]'
 
 type Camera =
   | { kind: 'checking' }

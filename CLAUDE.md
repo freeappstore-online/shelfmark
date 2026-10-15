@@ -13,7 +13,8 @@ store change; `parseLibraryJSON` must keep reading older backups.
 - Dev: `pnpm install && pnpm dev`
 - Build: `pnpm build`
 - Test: `pnpm test` (vitest + fake-indexeddb; component tests opt into jsdom)
-- Check: `fas check`
+- E2E: `pnpm build && pnpm e2e` (Playwright: desktop + phone, light + dark; Open Library mocked)
+- Check: `fas check` and `fas screencheck --skip-build` (no document scroll: `main.fas-main` scrolls)
 - Deploy: `git push origin main` (auto-deploys to R2 via GitHub Actions)
 
 ## Notes

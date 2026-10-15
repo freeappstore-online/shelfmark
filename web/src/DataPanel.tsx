@@ -6,13 +6,8 @@ import { localDate } from './library/dates'
 import { importGoodreads } from './library/goodreads'
 import type { ImportMode, LibraryExport } from './library/types'
 import { library } from './library/useLibrary'
+import { button, primaryButton, dangerButton } from './ui'
 
-const button =
-  'rounded-[var(--radius-sm)] border border-[var(--line-strong)] px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]'
-const primaryButton =
-  'rounded-[var(--radius-sm)] bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-deep)]'
-const dangerButton =
-  'rounded-[var(--radius-sm)] bg-[var(--danger)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90'
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`
 

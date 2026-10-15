@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useState } from 'react'
+import { type FormEvent, type ReactElement, cloneElement, useId, useState } from 'react'
 import { ConfirmDialog, EmptyState, Modal, PageHeader } from '@freeappstore/sdk/ui'
 import { BookSearch } from './BookSearch'
 import { Cover } from './Cover'
@@ -6,15 +6,10 @@ import { localDate } from './library/dates'
 import { type BookInput, type BookPatch, ValidationError } from './library/store'
 import { type Book, type BookStatus, type Shelf, type ShelfFilter, STATUSES } from './library/types'
 import { library, useLibrary } from './library/useLibrary'
+import { button, primaryButton, field } from './ui'
 
 const STATUS_LABEL = Object.fromEntries(STATUSES.map((s) => [s.key, s.label])) as Record<BookStatus, string>
 
-const button =
-  'rounded-[var(--radius-sm)] border border-[var(--line-strong)] px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]'
-const primaryButton =
-  'rounded-[var(--radius-sm)] bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-deep)]'
-const field =
-  'w-full rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] px-3 py-2 text-[var(--ink)]'
 
 export function errorMessage(err: unknown): string {
   if (err instanceof ValidationError) return err.message
@@ -351,12 +346,20 @@ function BookForm({
   )
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+/**
+ * A labelled form control. The label points at the control by id rather than
+ * wrapping it, so a select's accessible name is just the label, not the label
+ * plus the selected option.
+ */
+function Field({ label, children }: { label: string; children: ReactElement<{ id?: string }> }) {
+  const id = useId()
   return (
-    <label className="grid gap-1 text-sm font-semibold text-[var(--ink)]">
-      {label}
-      <span className="font-normal">{children}</span>
-    </label>
+    <div className="grid gap-1 text-sm">
+      <label htmlFor={id} className="font-semibold text-[var(--ink)]">
+        {label}
+      </label>
+      {cloneElement(children, { id })}
+    </div>
   )
 }
 

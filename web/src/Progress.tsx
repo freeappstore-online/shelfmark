@@ -18,11 +18,8 @@ import {
 } from './library/stats'
 import type { Book } from './library/types'
 import { library, useLibrary } from './library/useLibrary'
+import { button, field } from './ui'
 
-const button =
-  'rounded-[var(--radius-sm)] border border-[var(--line-strong)] px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--panel-strong)]'
-const field =
-  'w-full rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] px-3 py-2 text-[var(--ink)]'
 const panel = 'rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] p-4'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

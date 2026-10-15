@@ -86,6 +86,10 @@
   --radius: 0.75rem;
   --radius-sm: 0.5rem;
   --shadow: var(--shadow-card);
+
+  /* Filled buttons (app-owned): white on the deep accent, 6:1+ (WCAG AA). */
+  --button-bg: var(--accent-deep);
+  --button-ink: #ffffff;
 }
 
 :root[data-theme='dark'] {
@@ -125,6 +129,10 @@
   --bg-blob-2: rgba(137, 203, 229, 0.05);
   --shadow-soft: 0 28px 70px rgba(0, 0, 0, 0.6);
   --shadow-card: 0 12px 28px rgba(0, 0, 0, 0.4);
+
+  /* In dark, the accent is light, so filled buttons take black text (10:1). */
+  --button-bg: var(--accent);
+  --button-ink: #000000;
 }
 
 html {
@@ -232,3 +240,45 @@ a:focus-visible {
 /* Shell's text-size preference scales rem-based app typography. */
 :root[data-text='lg'] { font-size: 112.5%; }
 :root[data-text='sm'] { font-size: 87.5%; }
+
+/* No document-level scroll (fas screencheck): the page is locked to the
+   viewport and the Shell's <main> scrolls instead. The Shell root sets an
+   inline min-height, hence !important. */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+#root {
+  height: 100dvh;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+#root > div:has(> main.fas-main) {
+  height: 100%;
+  min-height: 0 !important;
+}
+main.fas-main {
+  /* Positioned so absolutely placed descendants (e.g. .sr-only text) stay inside the scroller. */
+  position: relative;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The Shell header (Free · Shelfmark · menu · text size · theme · Sign in) is
+   ~16px too wide for a 320px phone. Below 360px, tighten its spacing; layout
+   only, no brand colours. Its styles are inline, hence !important. */
+@media (max-width: 359px) {
+  #root header {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+  #root header > div:first-child {
+    gap: 0.5rem !important;
+  }
+  #root header > div:last-child {
+    gap: 0.25rem !important;
+  }
+}

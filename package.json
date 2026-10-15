@@ -19,7 +19,14 @@
     "dev": "pnpm --filter @shelfmark/web dev",
     "build": "pnpm --filter @shelfmark/web build",
     "preview": "pnpm --filter @shelfmark/web preview",
-    "typecheck": "pnpm --filter @shelfmark/web exec tsc -b",
-    "test": "pnpm --filter @shelfmark/web test"
+    "typecheck": "pnpm --filter @shelfmark/web exec tsc -b && pnpm --filter @shelfmark/web exec tsc -p ../e2e",
+    "test": "pnpm --filter @shelfmark/web test",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5",
+    "playwright": "1.64.1"
   }
 }
