@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto'
+import { openDB } from 'idb'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { type LibraryStore, ValidationError, createLibraryStore, normalizeTags } from './store'
 
@@ -191,5 +192,90 @@ describe('persistence and change events', () => {
 describe('normalizeTags', () => {
   it('trims, collapses spaces and drops case-insensitive duplicates', () => {
     expect(normalizeTags(['  sci  fi ', 'Sci Fi', 'classic', ''])).toEqual(['sci fi', 'classic'])
+  })
+})
+
+describe('progress and goals (schema 2)', () => {
+  it('logs pages read per day, moving a Want-to-read book to Reading', async () => {
+    const store = makeStore()
+    const book = await store.addBook({ title: 'Long', pages: 400 })
+    let updated = await store.logProgress(book.id, { page: 50 }, '2026-10-15')
+    expect(updated).toMatchObject({ currentPage: 50, status: 'reading', startedOn: '2026-10-15' })
+    await store.logProgress(book.id, { page: 80 }, '2026-10-16')
+    updated = await store.logProgress(book.id, { page: 120 }, '2026-10-16')
+    // Going back a few pages logs nothing negative.
+    await store.logProgress(book.id, { page: 110 }, '2026-10-17')
+    expect((await store.getBook(book.id))?.currentPage).toBe(110)
+    expect((await store.listProgress()).map((e) => [e.date, e.pagesRead])).toEqual([
+      ['2026-10-15', 50],
+      ['2026-10-16', 70],
+      ['2026-10-17', 0],
+    ])
+  })
+
+  it('stores a percent for a book without a page count, and a page for one with', async () => {
+    const store = makeStore()
+    const noPages = await store.addBook({ title: 'Ebook', status: 'reading' })
+    expect((await store.logProgress(noPages.id, { percent: 33.33 }, '2026-10-16')).percent).toBe(33.3)
+    const withPages = await store.addBook({ title: 'Paper', pages: 200 })
+    const b = await store.logProgress(withPages.id, { percent: 25 }, '2026-10-16')
+    expect(b.currentPage).toBe(50)
+    expect(b.percent).toBeUndefined()
+    // Pages past the end are capped.
+    expect((await store.logProgress(withPages.id, { page: 999 }, '2026-10-16')).currentPage).toBe(200)
+  })
+
+  it('rejects bad progress', async () => {
+    const store = makeStore()
+    const noPages = await store.addBook({ title: 'x' })
+    await expect(store.logProgress(noPages.id, { page: 10 })).rejects.toThrow(/page count/)
+    await expect(store.logProgress(noPages.id, { percent: 101 })).rejects.toBeInstanceOf(ValidationError)
+    await expect(store.logProgress(noPages.id, { percent: 5 }, '2026-13-01')).rejects.toBeInstanceOf(ValidationError)
+    await expect(store.logProgress('missing', { percent: 5 })).rejects.toBeInstanceOf(ValidationError)
+    expect(await store.listProgress()).toEqual([])
+  })
+
+  it("deleting a book deletes its progress, and only its", async () => {
+    const store = makeStore()
+    const a = await store.addBook({ title: 'A', pages: 100 })
+    const b = await store.addBook({ title: 'B', pages: 100 })
+    await store.logProgress(a.id, { page: 10 }, '2026-10-16')
+    await store.logProgress(b.id, { page: 20 }, '2026-10-16')
+    await store.deleteBook(a.id)
+    expect((await store.listProgress()).map((e) => e.bookId)).toEqual([b.id])
+  })
+
+  it('keeps a goal per year, and removes it with null', async () => {
+    const store = makeStore()
+    expect(await store.getGoal(2026)).toBeUndefined()
+    await store.setGoal(2026, 24)
+    await store.setGoal(2027, 30)
+    expect(await store.getGoal(2026)).toBe(24)
+    await store.setGoal(2026, null)
+    expect(await store.getGoal(2026)).toBeUndefined()
+    expect(await store.getGoal(2027)).toBe(30)
+    await expect(store.setGoal(2026, 0)).rejects.toBeInstanceOf(ValidationError)
+    await expect(store.setGoal(2026, 2.5)).rejects.toBeInstanceOf(ValidationError)
+  })
+
+  it('upgrades a version-1 database, keeping its books', async () => {
+    const dbName = 'upgrade-v1'
+    const v1 = await openDB(dbName, 1, {
+      upgrade(db) {
+        const books = db.createObjectStore('books', { keyPath: 'id' })
+        books.createIndex('status', 'status')
+        books.createIndex('updatedAt', 'updatedAt')
+        db.createObjectStore('shelves', { keyPath: 'id' })
+      },
+    })
+    const old = { id: 'old', title: 'Old', author: '', status: 'reading', shelves: [], notes: '', tags: [], createdAt: 1, updatedAt: 1 }
+    await v1.put('books', old)
+    v1.close()
+
+    const store = makeStore(dbName)
+    expect(await store.getBook('old')).toEqual(old)
+    expect(await store.listProgress()).toEqual([])
+    await store.setGoal(2026, 12)
+    expect(await store.getGoal(2026)).toBe(12)
   })
 })

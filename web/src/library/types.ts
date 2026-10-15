@@ -35,11 +35,29 @@ export interface Book {
   shelves: string[]
   startedOn?: ISODate
   finishedOn?: ISODate
+  /** How far into the book, for one with a page count. At most `pages`. */
+  currentPage?: number
+  /** How far into the book, 0–100, for one without a page count. */
+  percent?: number
   /** 0.5 to 5 in half-star steps; absent means unrated. */
   rating?: number
   notes: string
   tags: string[]
   createdAt: number
+  updatedAt: number
+}
+
+/**
+ * Reading done on one book on one day, for the streak and pages per month.
+ * One entry per book per day; later updates that day add to it.
+ */
+export interface ProgressEntry {
+  /** `${bookId}:${date}` */
+  id: string
+  bookId: string
+  date: ISODate
+  /** Pages read that day (0 for a book without a page count). */
+  pagesRead: number
   updatedAt: number
 }
 

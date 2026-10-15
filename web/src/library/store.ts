@@ -3,15 +3,29 @@
 // lazily on first use, so importing this module doesn't touch IndexedDB.
 
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb'
+import { localDate } from './dates'
 import { parseIsbn } from './isbn'
-import { type Book, type BookStatus, type ISODate, type Shelf, type ShelfFilter, STATUSES } from './types'
+import {
+  type Book,
+  type BookStatus,
+  type ISODate,
+  type ProgressEntry,
+  type Shelf,
+  type ShelfFilter,
+  STATUSES,
+} from './types'
 
 export const DB_NAME = 'shelfmark'
-const DB_VERSION = 1
+// 1: books, shelves. 2: progress, settings (#234).
+const DB_VERSION = 2
+const GOALS_KEY = 'goals'
 
 interface LibraryDB extends DBSchema {
   books: { key: string; value: Book; indexes: { status: BookStatus; updatedAt: number } }
   shelves: { key: string; value: Shelf }
+  progress: { key: string; value: ProgressEntry; indexes: { bookId: string; date: ISODate } }
+  /** GOALS_KEY → yearly book goals by year. */
+  settings: { key: string; value: Record<string, number> }
 }
 
 /** What a caller supplies to add a book. Everything but the title has a default. */
@@ -34,6 +48,17 @@ export interface LibraryStore {
   renameShelf(id: string, name: string): Promise<Shelf>
   /** Deletes the shelf and takes every book off it (the books stay). */
   deleteShelf(id: string): Promise<void>
+  /**
+   * Records how far into a book the reader is (a page, or a percent for a book
+   * without a page count) on a date (default today). Logs the pages read for
+   * the streak and stats, and moves a Want-to-read book to Reading.
+   */
+  logProgress(bookId: string, at: { page: number } | { percent: number }, date?: ISODate): Promise<Book>
+  /** Every progress entry, oldest first. */
+  listProgress(): Promise<ProgressEntry[]>
+  getGoal(year: number): Promise<number | undefined>
+  /** Sets the number of books to read in a year; null removes the goal. */
+  setGoal(year: number, goal: number | null): Promise<void>
   /** Called after any write, from this tab or another. Returns an unsubscribe function. */
   subscribe(listener: () => void): () => void
   close(): Promise<void>
@@ -70,6 +95,12 @@ export function openLibraryDB(name = DB_NAME): Promise<IDBPDatabase<LibraryDB>> 
         books.createIndex('updatedAt', 'updatedAt')
       }
       if (!db.objectStoreNames.contains('shelves')) db.createObjectStore('shelves', { keyPath: 'id' })
+      if (!db.objectStoreNames.contains('progress')) {
+        const progress = db.createObjectStore('progress', { keyPath: 'id' })
+        progress.createIndex('bookId', 'bookId')
+        progress.createIndex('date', 'date')
+      }
+      if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings')
     },
   })
 }
@@ -156,7 +187,74 @@ export function createLibraryStore({
     },
 
     async deleteBook(id) {
-      await (await db()).delete('books', id)
+      const tx = (await db()).transaction(['books', 'progress'], 'readwrite')
+      const progress = tx.objectStore('progress')
+      await tx.objectStore('books').delete(id)
+      for (const key of await progress.index('bookId').getAllKeys(id)) await progress.delete(key)
+      await tx.done
+      changed()
+    },
+
+    async logProgress(bookId, at, date = localDate(now())) {
+      if (!isValidDate(date)) throw new ValidationError('Dates should be real dates (YYYY-MM-DD).')
+      const tx = (await db()).transaction(['books', 'progress'], 'readwrite')
+      const books = tx.objectStore('books')
+      const existing = await books.get(bookId)
+      if (!existing) throw new ValidationError('That book is no longer in your library.')
+      const t = Math.max(now(), existing.updatedAt + 1)
+      const book: Book = { ...existing, updatedAt: t }
+      let pagesRead = 0
+
+      if ('page' in at) {
+        if (!Number.isInteger(at.page) || at.page < 0) throw new ValidationError('The page should be a whole number.')
+        if (!existing.pages) throw new ValidationError('Add the page count first, or record a percent.')
+        const page = Math.min(at.page, existing.pages)
+        pagesRead = Math.max(0, page - (existing.currentPage ?? 0))
+        book.currentPage = page
+      } else {
+        if (!(at.percent >= 0 && at.percent <= 100)) throw new ValidationError('The percent should be 0 to 100.')
+        if (existing.pages) {
+          // With a page count, progress is always kept as a page.
+          const page = Math.round((at.percent / 100) * existing.pages)
+          pagesRead = Math.max(0, page - (existing.currentPage ?? 0))
+          book.currentPage = page
+        } else {
+          book.percent = Math.round(at.percent * 10) / 10
+        }
+      }
+      if (book.status === 'want') book.status = 'reading'
+      if (book.status === 'reading' && !book.startedOn) book.startedOn = date
+      if (book.finishedOn && book.startedOn && book.finishedOn < book.startedOn) delete book.startedOn
+
+      const progress = tx.objectStore('progress')
+      const id = `${bookId}:${date}`
+      const entry = await progress.get(id)
+      await progress.put({ id, bookId, date, pagesRead: (entry?.pagesRead ?? 0) + pagesRead, updatedAt: t })
+      await books.put(book)
+      await tx.done
+      changed()
+      return book
+    },
+
+    async listProgress() {
+      return (await (await db()).getAllFromIndex('progress', 'date')).sort((a, b) => a.date.localeCompare(b.date))
+    },
+
+    async getGoal(year) {
+      return (await (await db()).get('settings', GOALS_KEY))?.[String(year)]
+    },
+
+    async setGoal(year, goal) {
+      if (!Number.isInteger(year) || year < 1000 || year > 9999) throw new ValidationError('That year is not valid.')
+      if (goal !== null && (!Number.isInteger(goal) || goal < 1 || goal > 10_000)) {
+        throw new ValidationError('A goal should be a whole number of books, 1 or more.')
+      }
+      const tx = (await db()).transaction('settings', 'readwrite')
+      const goals = { ...(await tx.store.get(GOALS_KEY)) }
+      if (goal === null) delete goals[String(year)]
+      else goals[String(year)] = goal
+      await tx.store.put(goals, GOALS_KEY)
+      await tx.done
       changed()
     },
 
@@ -275,6 +373,17 @@ export function normalizeBook(book: Book, knownShelves: ReadonlySet<string>): Bo
       throw new ValidationError('Pages should be a whole number above 0.')
     }
     out.pages = book.pages
+  }
+  if (book.currentPage !== undefined) {
+    if (!Number.isInteger(book.currentPage) || book.currentPage < 0) {
+      throw new ValidationError('The current page should be a whole number.')
+    }
+    // Lowering the page count shouldn't make an otherwise good edit fail.
+    out.currentPage = out.pages ? Math.min(book.currentPage, out.pages) : book.currentPage
+  }
+  if (book.percent !== undefined) {
+    if (!(book.percent >= 0 && book.percent <= 100)) throw new ValidationError('The percent should be 0 to 100.')
+    out.percent = book.percent
   }
   if (book.coverId !== undefined) {
     if (!Number.isInteger(book.coverId) || book.coverId < 1) throw new ValidationError('That cover id is not valid.')

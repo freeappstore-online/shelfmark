@@ -2,6 +2,7 @@ import { type FormEvent, type ReactNode, useState } from 'react'
 import { ConfirmDialog, EmptyState, Modal, PageHeader } from '@freeappstore/sdk/ui'
 import { BookSearch } from './BookSearch'
 import { Cover } from './Cover'
+import { localDate } from './library/dates'
 import { type BookInput, type BookPatch, ValidationError } from './library/store'
 import { type Book, type BookStatus, type Shelf, type ShelfFilter, STATUSES } from './library/types'
 import { library, useLibrary } from './library/useLibrary'
@@ -15,12 +16,7 @@ const primaryButton =
 const field =
   'w-full rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] px-3 py-2 text-[var(--ink)]'
 
-function today(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function errorMessage(err: unknown): string {
+export function errorMessage(err: unknown): string {
   if (err instanceof ValidationError) return err.message
   console.error('Shelfmark: saving failed', err)
   return "Couldn't save. Your browser may be out of storage space."
@@ -201,8 +197,8 @@ function BookForm({
   // Moving a book to Reading or Read fills in today's date if there isn't one yet.
   const changeStatus = (next: BookStatus) => {
     setStatus(next)
-    if (next === 'reading' && !startedOn) setStartedOn(today())
-    if (next === 'read' && !finishedOn) setFinishedOn(today())
+    if (next === 'reading' && !startedOn) setStartedOn(localDate())
+    if (next === 'read' && !finishedOn) setFinishedOn(localDate())
   }
 
   const submit = async (e: FormEvent) => {
