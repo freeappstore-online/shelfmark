@@ -21,7 +21,8 @@
     "preview": "pnpm --filter @shelfmark/web preview",
     "typecheck": "pnpm --filter @shelfmark/web exec tsc -b && pnpm --filter @shelfmark/web exec tsc -p ../e2e",
     "test": "pnpm --filter @shelfmark/web test",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:live": "playwright test -c e2e-live/playwright.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

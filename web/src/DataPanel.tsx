@@ -97,7 +97,8 @@ export function DataPanel() {
           <a href="https://openlibrary.org" className="underline">
             Open Library
           </a>
-          , and book covers are loaded from it. Barcode scans and imported files are read on your device.
+          , and book covers are loaded from Open Library and the Internet Archive (archive.org), which stores its
+          covers. Barcode scans and imported files are read on your device.
           FreeAppStore counts page visits to the app; it never sees your library.
         </p>
         <p className="mt-2 text-[var(--muted)]">

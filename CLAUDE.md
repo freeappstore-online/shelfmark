@@ -20,7 +20,8 @@ store change; `parseLibraryJSON` must keep reading older backups.
 ## Notes
 
 - Fonts are self-hosted (`@fontsource-variable/*`); the app makes no third-party requests
-  beyond the platform API, the analytics loader and Open Library search/covers. Keep it that way.
+  beyond the platform API, the analytics loader and Open Library search/covers (covers redirect to
+  archive.org, disclosed on About). Keep it that way. Live checks: `pnpm e2e:live` (real site and Open Library).
 - The library never leaves the device; only search queries go to Open Library.
 
 Platform conventions: https://raw.githubusercontent.com/freeappstore-online/freeappstore/main/SKILLS.md
