@@ -81,7 +81,7 @@ export function Progress() {
             {longest > streak && `Longest: ${plural(longest, 'day')}.`}
           </p>
         </section>
-        <GoalPanel year={year} goal={goal} progress={yearly} isThisYear={year === thisYear} />
+        <GoalPanel key={year} year={year} goal={goal} progress={yearly} isThisYear={year === thisYear} />
       </div>
 
       <div className="mt-8 flex items-center justify-between gap-2">
@@ -122,17 +122,25 @@ export function Progress() {
 
 function ReadingRow({ book }: { book: Book }) {
   const byPage = !!book.pages
-  const [value, setValue] = useState(String((byPage ? book.currentPage : book.percent) ?? ''))
+  const persisted = String((byPage ? book.currentPage : book.percent) ?? '')
+  const [draft, setDraft] = useState<{ value: string; revision: number } | null>(null)
+  const value = draft?.value ?? persisted
+  const conflict = draft !== null && draft.revision !== book.updatedAt
   const [error, setError] = useState('')
   const percent = bookPercent(book) ?? 0
 
   const save = async (e: FormEvent) => {
     e.preventDefault()
+    if (conflict) {
+      setDraft(null)
+      return setError('Progress changed. Review the latest value before saving.')
+    }
     const n = Number(value)
     if (value.trim() === '' || !Number.isFinite(n))
       return setError(byPage ? 'Enter a page number.' : 'Enter a percent.')
     try {
-      await library.logProgress(book.id, byPage ? { page: Math.round(n) } : { percent: n })
+      await library.logProgress(book.id, byPage ? { page: Math.round(n) } : { percent: n }, undefined, draft?.revision ?? book.updatedAt)
+      setDraft(null)
       setError('')
     } catch (err) {
       setError(errorMessage(err))
@@ -158,7 +166,7 @@ function ReadingRow({ book }: { book: Book }) {
               min={0}
               max={byPage ? book.pages : 100}
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={(e) => setDraft({ value: e.target.value, revision: draft?.revision ?? book.updatedAt })}
             />
             <span>{byPage ? `of ${book.pages}` : '%'}</span>
           </label>

@@ -79,6 +79,8 @@ export function BookSearch({ onPick, onClose }: { onPick: (draft?: BookInput) =>
 
   // Re-run the search on every change of text, mode or connection.
   useEffect(() => {
+    inFlight.current?.abort()
+    run.cancel()
     if (!query.trim()) {
       run.cancel()
       inFlight.current?.abort()
@@ -87,6 +89,7 @@ export function BookSearch({ onPick, onClose }: { onPick: (draft?: BookInput) =>
     }
     setState({ kind: 'loading' })
     run(query, mode)
+    return () => { inFlight.current?.abort(); run.cancel() }
   }, [query, mode, online, run])
 
   return (

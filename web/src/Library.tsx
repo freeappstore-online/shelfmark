@@ -29,11 +29,12 @@ export function Library() {
   const [searching, setSearching] = useState(false)
   const [managingShelves, setManagingShelves] = useState(false)
   const shelves = useLibrary((s) => s.listShelves())
-  const books = useLibrary((s) => s.listBooks(filter), [filter])
+
 
   // A deleted custom shelf can't stay selected.
   const activeFilter =
-    filter === 'all' || STATUSES.some((s) => s.key === filter) || shelves?.some((s) => s.id === filter) ? filter : 'all'
+    filter === 'all' || STATUSES.some((s) => s.key === filter) || shelves === undefined || shelves.some((s) => s.id === filter) ? filter : 'all'
+  const books = useLibrary((s) => s.listBooks(activeFilter), [activeFilter])
   const shelfName = new Map((shelves ?? []).map((s) => [s.id, s.name]))
   const filters = [
     { key: 'all', label: 'All' },
@@ -178,8 +179,8 @@ function BookForm({
   const [title, setTitle] = useState(start?.title ?? '')
   const [author, setAuthor] = useState(start?.author ?? '')
   const [status, setStatus] = useState<BookStatus>(book?.status ?? defaultStatus)
-  const [startedOn, setStartedOn] = useState(book?.startedOn ?? '')
-  const [finishedOn, setFinishedOn] = useState(book?.finishedOn ?? '')
+  const [startedOn, setStartedOn] = useState(book ? book.startedOn ?? '' : defaultStatus === 'reading' ? localDate() : '')
+  const [finishedOn, setFinishedOn] = useState(book ? book.finishedOn ?? '' : defaultStatus === 'read' ? localDate() : '')
   const [rating, setRating] = useState(book?.rating?.toString() ?? '')
   const [notes, setNotes] = useState(book?.notes ?? '')
   const [tags, setTags] = useState(book?.tags.join(', ') ?? '')

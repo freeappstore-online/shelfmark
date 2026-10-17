@@ -58,7 +58,7 @@ export interface LibraryStore {
    * without a page count) on a date (default today). Logs the pages read for
    * the streak and stats, and moves a Want-to-read book to Reading.
    */
-  logProgress(bookId: string, at: { page: number } | { percent: number }, date?: ISODate): Promise<Book>
+  logProgress(bookId: string, at: { page: number } | { percent: number }, date?: ISODate, expectedRevision?: number): Promise<Book>
   /** Every progress entry, oldest first. */
   listProgress(): Promise<ProgressEntry[]>
   getGoal(year: number): Promise<number | undefined>
@@ -283,6 +283,15 @@ export function createLibraryStore({
         if (value === null) delete merged[key]
         else if (value !== undefined) merged[key] = value
       }
+      if (existing.pages && !merged.pages) {
+        if (patch.percent === undefined && existing.currentPage !== undefined)
+          merged.percent = Math.round(existing.currentPage / existing.pages * 1000) / 10
+        delete merged.currentPage
+      } else if (!existing.pages && merged.pages) {
+        if (patch.currentPage === undefined && existing.percent !== undefined)
+          merged.currentPage = Math.round(existing.percent / 100 * Number(merged.pages))
+        delete merged.percent
+      }
       const book = normalizeBook(
         { ...(merged as unknown as Book), id, createdAt: existing.createdAt, updatedAt: Math.max(now(), existing.updatedAt + 1) },
         known,
@@ -302,12 +311,14 @@ export function createLibraryStore({
       changed()
     },
 
-    async logProgress(bookId, at, date = localDate(now())) {
+    async logProgress(bookId, at, date = localDate(now()), expectedRevision) {
       if (!isValidDate(date)) throw new ValidationError('Dates should be real dates (YYYY-MM-DD).')
       const tx = (await db()).transaction(['books', 'progress'], 'readwrite')
       const books = tx.objectStore('books')
       const existing = await books.get(bookId)
       if (!existing) throw new ValidationError('That book is no longer in your library.')
+      if (expectedRevision !== undefined && existing.updatedAt !== expectedRevision)
+        throw new ValidationError('Progress changed. Review the latest value before saving.')
       const t = Math.max(now(), existing.updatedAt + 1)
       const book: Book = { ...existing, updatedAt: t }
       let pagesRead = 0
@@ -370,18 +381,21 @@ export function createLibraryStore({
     },
 
     async addShelf(name) {
-      const shelf: Shelf = { id: crypto.randomUUID(), name: await uniqueShelfName(await db(), name), createdAt: now() }
-      await (await db()).add('shelves', shelf)
+      const tx = (await db()).transaction('shelves', 'readwrite')
+      const shelf: Shelf = { id: crypto.randomUUID(), name: uniqueShelfName(await tx.store.getAll(), name), createdAt: now() }
+      await tx.store.add(shelf)
+      await tx.done
       changed()
       return shelf
     },
 
     async renameShelf(id, name) {
-      const d = await db()
-      const existing = await d.get('shelves', id)
+      const tx = (await db()).transaction('shelves', 'readwrite')
+      const existing = await tx.store.get(id)
       if (!existing) throw new ValidationError('That shelf no longer exists.')
-      const shelf = { ...existing, name: await uniqueShelfName(d, name, id) }
-      await d.put('shelves', shelf)
+      const shelf = { ...existing, name: uniqueShelfName(await tx.store.getAll(), name, id) }
+      await tx.store.put(shelf)
+      await tx.done
       changed()
       return shelf
     },
@@ -415,12 +429,12 @@ export function createLibraryStore({
   }
 }
 
-async function uniqueShelfName(d: IDBPDatabase<LibraryDB>, raw: string, selfId?: string): Promise<string> {
+function uniqueShelfName(shelves: Shelf[], raw: string, selfId?: string): string {
   const name = raw.trim().replace(/\s+/g, ' ')
   if (!name) throw new ValidationError('Give the shelf a name.')
   if (name.length > 60) throw new ValidationError('Shelf names can be up to 60 characters.')
   const lower = name.toLocaleLowerCase()
-  const taken = [...STATUSES.map((s) => ({ id: s.key, name: s.label })), ...(await d.getAll('shelves'))].some(
+  const taken = [...STATUSES.map((s) => ({ id: s.key, name: s.label })), ...shelves].some(
     (s) => s.id !== selfId && s.name.toLocaleLowerCase() === lower,
   )
   if (taken) throw new ValidationError(`There's already a shelf called "${name}".`)
