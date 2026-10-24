@@ -129,6 +129,23 @@ describe('JSON export and import', () => {
   it('names the file by date', () => {
     expect(backupFileName('2026-10-16')).toBe('shelfmark-2026-10-16.json')
   })
+
+  it('merges repeated shelf names in an older backup into one shelf without losing book memberships', async () => {
+    const source = makeStore()
+    const first = await source.addShelf('Club')
+    const book = await source.addBook({ title: 'Shared', shelves: [first.id] })
+    const backup = await source.exportAll()
+    const duplicate = { ...first, id: 'legacy-duplicate', name: ' club ' }
+    backup.shelves.push(duplicate)
+    backup.books[0] = { ...book, shelves: [first.id, duplicate.id] }
+
+    const target = makeStore()
+    await target.importAll(parseLibraryJSON(serializeLibrary(backup)), 'merge')
+    const shelves = await target.listShelves()
+    expect(shelves).toHaveLength(1)
+    expect(shelves[0].name).toBe('Club')
+    expect((await target.getBook(book.id))?.shelves).toEqual([shelves[0].id])
+  })
 })
 
 describe('parseLibraryJSON rejects bad files without writing anything', () => {
@@ -149,6 +166,12 @@ describe('parseLibraryJSON rejects bad files without writing anything', () => {
 
   it('accepts the good fixture', () => {
     expect(parseLibraryJSON(JSON.stringify(good())).books).toHaveLength(1)
+  })
+
+  it('omits a damaged export timestamp so the restore dialog never shows Invalid Date', () => {
+    const fixture = good()
+    fixture.exportedAt = 'not a timestamp'
+    expect(parseLibraryJSON(JSON.stringify(fixture)).exportedAt).toBe('')
   })
 
   it.each([

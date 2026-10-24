@@ -107,7 +107,7 @@ export function parseLibraryJSON(text: string): LibraryExport {
   return {
     app: 'shelfmark',
     schemaVersion: SCHEMA_VERSION,
-    exportedAt: typeof raw.exportedAt === 'string' ? raw.exportedAt : '',
+    exportedAt: typeof raw.exportedAt === 'string' && !Number.isNaN(Date.parse(raw.exportedAt)) ? raw.exportedAt : '',
     books,
     shelves,
     progress,

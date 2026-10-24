@@ -249,6 +249,7 @@ export function createLibraryStore({
           else {
             await shelves.put(s)
             ids.add(s.id)
+            byName.set(s.name.toLocaleLowerCase(), s.id)
             summary.shelves++
           }
         }
