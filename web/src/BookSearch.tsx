@@ -125,30 +125,30 @@ export function BookSearch({ onPick, onClose }: { onPick: (draft?: BookInput) =>
 
         <div className="mt-3 min-h-24" aria-live="polite">
           {state.kind === 'idle' && (
-            <p className="text-sm text-[var(--muted)]">
+            <p className="text-sm text-muted">
               {online
                 ? 'Search by title, author or ISBN. Only your search is sent to Open Library.'
                 : "You're offline, so search isn't available. You can still add a book by hand."}
             </p>
           )}
           {state.kind === 'loading' && (
-            <p className="flex items-center gap-2 text-sm text-[var(--muted)]">
+            <p className="flex items-center gap-2 text-sm text-muted">
               <Spinner size={16} /> Searching…
             </p>
           )}
           {state.kind === 'offline' && (
-            <p className="text-sm text-[var(--muted)]">
+            <p className="text-sm text-muted">
               Can't reach Open Library — you may be offline. Add the book by hand instead, or try again when you're
               connected.
             </p>
           )}
           {state.kind === 'error' && (
-            <p className="text-sm text-[var(--danger)]">
+            <p className="text-sm text-danger">
               Open Library didn't answer just now. Try again in a moment, or add the book by hand.
             </p>
           )}
           {state.kind === 'done' && state.results.length === 0 && (
-            <p className="text-sm text-[var(--muted)]">No books found. Check the spelling, or add the book by hand.</p>
+            <p className="text-sm text-muted">No books found. Check the spelling, or add the book by hand.</p>
           )}
           {state.kind === 'done' && state.results.length > 0 && (
             <ul className="grid max-h-[50dvh] gap-1 overflow-y-auto">
@@ -157,12 +157,12 @@ export function BookSearch({ onPick, onClose }: { onPick: (draft?: BookInput) =>
                   <button
                     type="button"
                     onClick={() => onPick(toBookInput(r))}
-                    className="flex w-full items-center gap-3 rounded-[var(--radius-sm)] p-2 text-left hover:bg-[var(--panel-strong)]"
+                    className="flex w-full items-center gap-3 rounded-fas-sm p-2 text-left hover:bg-panel-strong"
                   >
                     <Cover coverId={r.coverId} title={r.title} />
                     <span className="min-w-0">
-                      <span className="block font-semibold text-[var(--ink)]">{r.title}</span>
-                      <span className="block text-sm text-[var(--muted)]">
+                      <span className="block font-semibold text-ink">{r.title}</span>
+                      <span className="block text-sm text-muted">
                         {[r.authors.join(', '), r.firstPublishYear].filter(Boolean).join(' · ')}
                       </span>
                     </span>

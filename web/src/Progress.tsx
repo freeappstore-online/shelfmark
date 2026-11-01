@@ -20,7 +20,7 @@ import type { Book } from './library/types'
 import { library, useLibrary } from './library/useLibrary'
 import { button, field } from './ui'
 
-const panel = 'rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] p-4'
+const panel = 'rounded-fas border border-line bg-panel p-4'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`
@@ -50,7 +50,7 @@ export function Progress() {
       <PageHeader title="Progress" description="Your reading, worked out on this device." />
 
       <section className="mt-6" aria-labelledby="reading-now">
-        <h2 id="reading-now" className="display-font text-xl font-semibold text-[var(--ink)]">
+        <h2 id="reading-now" className="display-font text-xl font-semibold text-ink">
           Reading now
         </h2>
         {reading.length === 0 ? (
@@ -68,11 +68,11 @@ export function Progress() {
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <section className={panel} aria-labelledby="streak">
-          <h2 id="streak" className="text-sm font-semibold text-[var(--muted)]">
+          <h2 id="streak" className="text-sm font-semibold text-muted">
             Reading streak
           </h2>
-          <p className="display-font mt-1 text-4xl font-semibold text-[var(--ink)]">{plural(streak, 'day')}</p>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <p className="display-font mt-1 text-4xl font-semibold text-ink">{plural(streak, 'day')}</p>
+          <p className="mt-1 text-sm text-muted">
             {streak === 0
               ? 'Note your page on a book you’re reading to start one.'
               : progress.some((e) => e.date === today)
@@ -85,7 +85,7 @@ export function Progress() {
       </div>
 
       <div className="mt-8 flex items-center justify-between gap-2">
-        <h2 className="display-font text-xl font-semibold text-[var(--ink)]">{year} in books</h2>
+        <h2 className="display-font text-xl font-semibold text-ink">{year} in books</h2>
         <div className="flex gap-2">
           <button type="button" className={button} onClick={() => setYear(year - 1)} aria-label={`Show ${year - 1}`}>
             ← {year - 1}
@@ -151,13 +151,13 @@ function ReadingRow({ book }: { book: Book }) {
     <li className={`${panel} flex gap-3`}>
       <Cover coverId={book.coverId} title={book.title} />
       <div className="min-w-0 flex-1">
-        <p className="font-semibold text-[var(--ink)]">{book.title}</p>
-        {book.author && <p className="text-sm text-[var(--muted)]">{book.author}</p>}
+        <p className="font-semibold text-ink">{book.title}</p>
+        {book.author && <p className="text-sm text-muted">{book.author}</p>}
         <div className="mt-2">
           <ProgressBar value={percent} max={100} label={`${book.title}: ${percent}%`} />
         </div>
         <form onSubmit={save} className="mt-2 flex items-center gap-2" noValidate>
-          <label className="flex items-center gap-2 text-sm text-[var(--muted)]">
+          <label className="flex items-center gap-2 text-sm text-muted">
             {byPage ? 'Page' : 'Percent'}
             <input
               className={`${field} w-24`}
@@ -173,10 +173,10 @@ function ReadingRow({ book }: { book: Book }) {
           <button type="submit" className={button}>
             Save
           </button>
-          <span className="text-sm text-[var(--muted)]">{percent}%</span>
+          <span className="text-sm text-muted">{percent}%</span>
         </form>
         {error && (
-          <p role="alert" className="mt-1 text-sm text-[var(--danger)]">
+          <p role="alert" className="mt-1 text-sm text-danger">
             {error}
           </p>
         )}
@@ -225,29 +225,29 @@ function GoalPanel({
 
   return (
     <section className={panel} aria-labelledby="goal">
-      <h2 id="goal" className="text-sm font-semibold text-[var(--muted)]">
+      <h2 id="goal" className="text-sm font-semibold text-muted">
         {year} goal
       </h2>
       {goal ? (
         <>
-          <p className="display-font mt-1 text-4xl font-semibold text-[var(--ink)]">
-            {read} <span className="text-xl text-[var(--muted)]">of {plural(goal, 'book')}</span>
+          <p className="display-font mt-1 text-4xl font-semibold text-ink">
+            {read} <span className="text-xl text-muted">of {plural(goal, 'book')}</span>
           </p>
           <div className="mt-2">
             <ProgressBar value={Math.min(read, goal)} max={goal} label={`${read} of ${goal} books, ${percent}%`} />
           </div>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <p className="mt-1 text-sm text-muted">
             {percent}%. {pace}
           </p>
         </>
       ) : (
-        <p className="mt-1 text-sm text-[var(--muted)]">
+        <p className="mt-1 text-sm text-muted">
           {plural(read, 'book')} finished. Set a goal to track how the year is going.
         </p>
       )}
       {editing ? (
         <form onSubmit={save} className="mt-2 flex items-center gap-2" noValidate>
-          <label className="flex items-center gap-2 text-sm text-[var(--muted)]">
+          <label className="flex items-center gap-2 text-sm text-muted">
             Books
             <input
               className={`${field} w-24`}
@@ -262,14 +262,14 @@ function GoalPanel({
           <button type="submit" className={button}>
             Save
           </button>
-          <button type="button" className="text-sm text-[var(--muted)] underline" onClick={() => setEditing(false)}>
+          <button type="button" className="text-sm text-muted underline" onClick={() => setEditing(false)}>
             Cancel
           </button>
         </form>
       ) : (
         <button
           type="button"
-          className="mt-2 text-sm text-[var(--muted)] underline"
+          className="mt-2 text-sm text-muted underline"
           onClick={() => {
             setValue(goal ? String(goal) : '')
             setEditing(true)
@@ -279,7 +279,7 @@ function GoalPanel({
         </button>
       )}
       {error && (
-        <p role="alert" className="mt-1 text-sm text-[var(--danger)]">
+        <p role="alert" className="mt-1 text-sm text-danger">
           {error}
         </p>
       )}
@@ -311,13 +311,13 @@ function MonthBars({
   return (
     <section className={panel} aria-label={`${title}, ${year}`}>
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold text-[var(--muted)]">{title}</h3>
-        <p className="text-sm text-[var(--ink)]" aria-hidden>
+        <h3 className="text-sm font-semibold text-muted">{title}</h3>
+        <p className="text-sm text-ink" aria-hidden>
           {shown ? `${MONTHS[active!]}: ${plural(shown.value, unit)}` : `${plural(total, unit)} in ${year}`}
         </p>
       </div>
       <div
-        className="mt-3 flex h-28 items-end gap-[2px] border-b border-[var(--line-strong)]"
+        className="mt-3 flex h-28 items-end gap-[2px] border-b border-line-strong"
         aria-hidden
         onMouseLeave={() => setActive(null)}
       >
@@ -340,7 +340,7 @@ function MonthBars({
           </div>
         ))}
       </div>
-      <div className="mt-1 flex gap-[2px] text-center text-[10px] text-[var(--muted)]" aria-hidden>
+      <div className="mt-1 flex gap-[2px] text-center text-[10px] text-muted" aria-hidden>
         {MONTHS.map((m) => (
           <span key={m} className="flex-1">
             {m[0]}
@@ -374,17 +374,17 @@ function TopList({ title, items, empty }: { title: string; items: Ranked[]; empt
   const id = useId()
   return (
     <section className={panel} aria-labelledby={id}>
-      <h3 id={id} className="text-sm font-semibold text-[var(--muted)]">
+      <h3 id={id} className="text-sm font-semibold text-muted">
         {title}
       </h3>
       {items.length === 0 ? (
-        <p className="mt-2 text-sm text-[var(--muted)]">{empty}</p>
+        <p className="mt-2 text-sm text-muted">{empty}</p>
       ) : (
         <ol className="mt-2 grid gap-1">
           {items.map((item) => (
             <li key={item.name} className="flex justify-between gap-3 text-sm">
-              <span className="truncate text-[var(--ink)]">{item.name}</span>
-              <span className="shrink-0 text-[var(--muted)]">{plural(item.count, 'book')}</span>
+              <span className="truncate text-ink">{item.name}</span>
+              <span className="shrink-0 text-muted">{plural(item.count, 'book')}</span>
             </li>
           ))}
         </ol>

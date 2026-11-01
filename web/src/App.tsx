@@ -45,7 +45,7 @@ function About() {
   return (
     <>
       <PageHeader title="About" />
-      <p className="mt-4 text-[var(--muted)]">
+      <p className="mt-4 text-muted">
         Shelfmark is a simple log of the books you want to read, are reading and have read: shelves of
         your own, dates, a star rating, notes and tags. Your library is kept on this device, with no
         account needed. Find books on Open Library by title, author or ISBN, scan a book's barcode,
@@ -54,7 +54,7 @@ function About() {
         with you, and back everything up to a file. No ads.
       </p>
       <DataPanel />
-      <p className="mt-6 text-[var(--muted)]">
+      <p className="mt-6 text-muted">
         Shelfmark is a free, MIT-licensed app on{' '}
         <a href="https://freeappstore.online" className="underline">
           FreeAppStore

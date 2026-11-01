@@ -63,14 +63,14 @@ export function Library() {
             onClick={() => setFilter(f.key)}
             className={`rounded-full border px-3 py-1 text-sm ${
               activeFilter === f.key
-                ? 'border-[var(--accent)] bg-[var(--accent-soft)] font-semibold text-[var(--ink)]'
-                : 'border-[var(--line-strong)] text-[var(--muted)]'
+                ? 'border-accent bg-accent-soft font-semibold text-ink'
+                : 'border-line-strong text-muted'
             }`}
           >
             {f.label}
           </button>
         ))}
-        <button type="button" className="text-sm text-[var(--muted)] underline" onClick={() => setManagingShelves(true)}>
+        <button type="button" className="text-sm text-muted underline" onClick={() => setManagingShelves(true)}>
           Edit shelves
         </button>
       </div>
@@ -98,30 +98,30 @@ export function Library() {
               <button
                 type="button"
                 onClick={() => setEditing({ book })}
-                className="flex w-full gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] p-4 text-left hover:border-[var(--line-strong)]"
+                className="flex w-full gap-3 rounded-fas border border-line bg-panel p-4 text-left hover:border-line-strong"
               >
                 <Cover coverId={book.coverId} title={book.title} />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-3">
-                    <span className="display-font text-lg font-semibold text-[var(--ink)]">{book.title}</span>
+                    <span className="display-font text-lg font-semibold text-ink">{book.title}</span>
                     {book.rating !== undefined && (
-                      <span className="shrink-0 text-[var(--accent)]" aria-label={`${book.rating} out of 5 stars`}>
+                      <span className="shrink-0 text-accent" aria-label={`${book.rating} out of 5 stars`}>
                         {stars(book.rating)}
                       </span>
                     )}
                   </span>
-                  {book.author && <span className="block text-sm text-[var(--muted)]">{book.author}</span>}
+                  {book.author && <span className="block text-sm text-muted">{book.author}</span>}
                   <span className="mt-2 flex flex-wrap gap-1.5 text-xs">
-                    <span className="rounded-full bg-[var(--sky-soft)] px-2 py-0.5 text-[var(--sky-deep)]">
+                    <span className="rounded-full bg-sky-soft px-2 py-0.5 text-sky-deep">
                       {STATUS_LABEL[book.status]}
                     </span>
                     {book.shelves.map((id) => (
-                      <span key={id} className="rounded-full bg-[var(--mint-soft)] px-2 py-0.5 text-[var(--mint-deep)]">
+                      <span key={id} className="rounded-full bg-mint-soft px-2 py-0.5 text-mint-deep">
                         {shelfName.get(id)}
                       </span>
                     ))}
                     {book.tags.map((tag) => (
-                      <span key={tag} className="rounded-full border border-[var(--line-strong)] px-2 py-0.5 text-[var(--muted)]">
+                      <span key={tag} className="rounded-full border border-line-strong px-2 py-0.5 text-muted">
                         #{tag}
                       </span>
                     ))}
@@ -279,10 +279,10 @@ function BookForm({
           </Field>
           {shelves.length > 0 && (
             <fieldset>
-              <legend className="mb-1 text-sm font-semibold text-[var(--ink)]">Your shelves</legend>
+              <legend className="mb-1 text-sm font-semibold text-ink">Your shelves</legend>
               <div className="flex flex-wrap gap-x-4 gap-y-1">
                 {shelves.map((s) => (
-                  <label key={s.id} className="flex items-center gap-2 text-sm text-[var(--ink)]">
+                  <label key={s.id} className="flex items-center gap-2 text-sm text-ink">
                     <input
                       type="checkbox"
                       checked={onShelves.includes(s.id)}
@@ -311,13 +311,13 @@ function BookForm({
             </Field>
           </div>
           {error && (
-            <p role="alert" className="text-sm text-[var(--danger)]">
+            <p role="alert" className="text-sm text-danger">
               {error}
             </p>
           )}
           <div className="mt-2 flex items-center justify-between gap-2">
             {book ? (
-              <button type="button" className="text-sm text-[var(--danger)] underline" onClick={() => setConfirmingDelete(true)}>
+              <button type="button" className="text-sm text-danger underline" onClick={() => setConfirmingDelete(true)}>
                 Delete book
               </button>
             ) : (
@@ -356,7 +356,7 @@ function Field({ label, children }: { label: string; children: ReactElement<{ id
   const id = useId()
   return (
     <div className="grid gap-1 text-sm">
-      <label htmlFor={id} className="font-semibold text-[var(--ink)]">
+      <label htmlFor={id} className="font-semibold text-ink">
         {label}
       </label>
       {cloneElement(children, { id })}
@@ -383,7 +383,7 @@ function ShelvesDialog({ open, shelves, onClose }: { open: boolean; shelves: She
   return (
     <>
       <Modal open={open} onClose={onClose} title="Your shelves" maxWidth={480}>
-        <p className="text-sm text-[var(--muted)]">
+        <p className="text-sm text-muted">
           Want to read, Reading and Read are always there. Add shelves of your own; a book can be on several.
         </p>
         <ul className="mt-3 grid gap-2">
@@ -404,7 +404,7 @@ function ShelvesDialog({ open, shelves, onClose }: { open: boolean; shelves: She
           </button>
         </form>
         {error && (
-          <p role="alert" className="mt-2 text-sm text-[var(--danger)]">
+          <p role="alert" className="mt-2 text-sm text-danger">
             {error}
           </p>
         )}

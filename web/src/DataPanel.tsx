@@ -88,10 +88,10 @@ export function DataPanel() {
   return (
     <>
       <section className="mt-6" aria-labelledby="privacy">
-        <h2 id="privacy" className="display-font text-xl font-semibold text-[var(--ink)]">
+        <h2 id="privacy" className="display-font text-xl font-semibold text-ink">
           Your privacy
         </h2>
-        <p className="mt-2 text-[var(--muted)]">
+        <p className="mt-2 text-muted">
           Your library is stored only on this device, in your browser. There's no account, and your books, notes,
           ratings and reading progress are never sent anywhere. When you search, just the search goes to{' '}
           <a href="https://openlibrary.org" className="underline">
@@ -101,20 +101,20 @@ export function DataPanel() {
           covers. Barcode scans and imported files are read on your device.
           FreeAppStore counts page visits to the app; it never sees your library.
         </p>
-        <p className="mt-2 text-[var(--muted)]">
+        <p className="mt-2 text-muted">
           Because nothing is kept online, clearing your browser's site data deletes your library. Save a backup now
           and then.
         </p>
       </section>
 
       <section className="mt-6" aria-labelledby="your-data">
-        <h2 id="your-data" className="display-font text-xl font-semibold text-[var(--ink)]">
+        <h2 id="your-data" className="display-font text-xl font-semibold text-ink">
           Your data
         </h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] p-4">
-            <h3 className="font-semibold text-[var(--ink)]">Backup</h3>
-            <p className="mt-1 text-sm text-[var(--muted)]">
+          <div className="rounded-fas border border-line bg-panel p-4">
+            <h3 className="font-semibold text-ink">Backup</h3>
+            <p className="mt-1 text-sm text-muted">
               Everything (books, shelves, progress and goals) in one JSON file. Restore it here or on another device.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -126,9 +126,9 @@ export function DataPanel() {
               </button>
             </div>
           </div>
-          <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] p-4">
-            <h3 className="font-semibold text-[var(--ink)]">Goodreads</h3>
-            <p className="mt-1 text-sm text-[var(--muted)]">
+          <div className="rounded-fas border border-line bg-panel p-4">
+            <h3 className="font-semibold text-ink">Goodreads</h3>
+            <p className="mt-1 text-sm text-muted">
               In Goodreads, go to My Books → Import and export → Export Library, then pick the CSV file here. Books you
               already have are skipped.
             </p>
@@ -142,7 +142,7 @@ export function DataPanel() {
         <input ref={backupInput} type="file" accept=".json,application/json" hidden onChange={pickBackup} />
         <input ref={goodreadsInput} type="file" accept=".csv,text/csv" hidden onChange={pickGoodreads} />
         <p
-          className={`mt-3 text-sm ${status?.kind === 'error' ? 'text-[var(--danger)]' : 'text-[var(--ink)]'}`}
+          className={`mt-3 text-sm ${status?.kind === 'error' ? 'text-danger' : 'text-ink'}`}
           role={status?.kind === 'error' ? 'alert' : 'status'}
         >
           {busy ? 'Working…' : status?.text}
@@ -152,14 +152,14 @@ export function DataPanel() {
       <Modal open={pending !== null} onClose={() => setPending(null)} title="Import this backup?" maxWidth={480}>
         {pending && (
           <>
-            <p className="text-[var(--muted)]">
+            <p className="text-muted">
               It has {plural(pending.books.length, 'book')}, {plural(pending.shelves.length, 'shelf', 'shelves')} and{' '}
               {plural(pending.progress.length, 'day')} of reading progress
               {pending.exportedAt && `, saved ${new Date(pending.exportedAt).toLocaleDateString()}`}.
             </p>
-            <p className="mt-2 text-sm text-[var(--muted)]">
-              <strong className="text-[var(--ink)]">Merge</strong> adds it to your library; where a book is in both, the
-              more recently changed copy is kept. <strong className="text-[var(--ink)]">Replace</strong> deletes your
+            <p className="mt-2 text-sm text-muted">
+              <strong className="text-ink">Merge</strong> adds it to your library; where a book is in both, the
+              more recently changed copy is kept. <strong className="text-ink">Replace</strong> deletes your
               current library first.
             </p>
             <div className="mt-4 flex flex-wrap justify-end gap-2">

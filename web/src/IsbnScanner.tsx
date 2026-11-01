@@ -101,16 +101,16 @@ export function IsbnScanner({
   return (
     <Modal open onClose={onClose} title="Scan ISBN" maxWidth={480}>
       {showVideo && (
-        <div className="relative overflow-hidden rounded-[var(--radius)] bg-black">
+        <div className="relative overflow-hidden rounded-fas bg-capture-paper">
           <video ref={video} className="aspect-[4/3] w-full object-cover" playsInline muted aria-label="Camera" />
           {/* A guide for where to hold the barcode. */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-8 top-1/2 h-20 -translate-y-1/2 rounded-md border-2 border-white/80"
+            className="pointer-events-none absolute inset-x-8 top-1/2 h-20 -translate-y-1/2 rounded-md border-2 border-capture-ink/80"
           />
         </div>
       )}
-      <p className="mt-2 text-sm text-[var(--muted)]" aria-live="polite">
+      <p className="mt-2 text-sm text-muted" aria-live="polite">
         {camera.kind === 'checking' && 'Checking for a camera…'}
         {camera.kind === 'starting' && 'Starting the camera…'}
         {camera.kind === 'scanning' &&
@@ -122,7 +122,7 @@ export function IsbnScanner({
       </p>
 
       <form onSubmit={submit} className="mt-3 grid gap-2" noValidate>
-        <label className="grid gap-1 text-sm font-semibold text-[var(--ink)]">
+        <label className="grid gap-1 text-sm font-semibold text-ink">
           ISBN
           <input
             className={`${field} font-normal`}
@@ -139,7 +139,7 @@ export function IsbnScanner({
           />
         </label>
         {error && (
-          <p role="alert" className="text-sm text-[var(--danger)]">
+          <p role="alert" className="text-sm text-danger">
             {error}
           </p>
         )}
