@@ -1,6 +1,6 @@
 // Themes (#236): the app follows the system's light or dark setting on first
-// load (no flash: index.html sets it before paint), and the header toggle
-// overrides it and is remembered.
+// load (no flash: index.html sets it before paint), and the theme choice on
+// the SDK's Profile page (header avatar) overrides it and is remembered.
 
 import type { Page } from '@playwright/test'
 import { expect, openApp, test } from './fixtures'
@@ -14,16 +14,18 @@ test('follows the system theme, and the toggle overrides it', async ({ page }, i
   await openApp(page)
   expect(await theme(page)).toBe(systemDark ? 'dark' : 'light')
 
-  // The toggle cycles system → light → dark.
-  await page.getByRole('button', { name: 'Theme: system' }).click()
-  await expect(page.getByRole('button', { name: 'Theme: light' })).toBeVisible()
+  // SDK 0.17: the theme choice lives on the built-in Profile page.
+  await page.getByRole('link', { name: 'Profile', exact: true }).click()
+  const choice = (name: string) => page.getByRole('button', { name, exact: true })
+  await choice('Light').click()
+  await expect(choice('Light')).toHaveAttribute('aria-pressed', 'true')
   await expect.poll(() => theme(page)).toBe('light')
-  await page.getByRole('button', { name: 'Theme: light' }).click()
-  await expect(page.getByRole('button', { name: 'Theme: dark' })).toBeVisible()
+  await choice('Dark').click()
+  await expect(choice('Dark')).toHaveAttribute('aria-pressed', 'true')
   await expect.poll(() => theme(page)).toBe('dark')
 
   // Remembered across reloads.
   await page.reload()
-  await expect(page.getByRole('button', { name: 'Theme: dark' })).toBeVisible()
+  await expect(choice('Dark')).toHaveAttribute('aria-pressed', 'true')
   expect(await theme(page)).toBe('dark')
 })
